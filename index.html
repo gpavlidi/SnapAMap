@@ -17,6 +17,7 @@
     <script type="text/javascript">
       var map ;
       var geocoder;
+      var api_key = "" ;
       function initialize() {
         var mapOptions = {
           center: new google.maps.LatLng(37.777499,-122.421538),
@@ -118,7 +119,9 @@
   		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   		<input type="text" name="filename" id="filename" value="ortho"/>.jpg<button id="snap" onclick="snap();">Snap!</button>
   	</div>
-    <div id="map_canvas" style="width:100%; height:95%"></div>
-    <div id="test"></div>
+    <div id="map_canvas" style="width:100%; height:92%"></div>
+    <div id="copyright" style="width:100%; height:3%; font-size: 11px"> 2012 by <a href="https://github.com/gpavlidi">gpavlidi</a>, <a href="https://github.com/pkalogiros">pkalogiros</a>
+    	and <a href="https://github.com/niklasvh/html2canvas">some help</a> <a href="https://github.com/eligrey/FileSaver.js">from</a> <a href="https://github.com/eligrey/BlobBuilder.js">others.</a>
+    </div>
   </body>
 </html>
