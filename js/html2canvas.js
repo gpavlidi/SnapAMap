@@ -2329,6 +2329,20 @@ _html2canvas.Preload = function( options ) {
                     images.numTotal++;
                     setImageLoadHandlers(img, imageObj);
                     img.src = src;
+                    // if complete, means it was cached already (stupid CHROME)
+					if ( img.complete || img.complete === undefined ) 
+					{
+						//Copy onload code from img.onload()
+					    if ( imageObj.timer !== undefined ) {
+			                // CORS succeeded
+			                window.clearTimeout( imageObj.timer );
+			            }
+			            images.numLoaded++;
+			            imageObj.succeeded = true;
+			            img.onerror = img.onload = null;
+			            start();
+			            return ;
+					}
 
                     // work around for https://bugs.webkit.org/show_bug.cgi?id=80028
                     img.customComplete = function () {
