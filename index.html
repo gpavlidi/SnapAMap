@@ -15,42 +15,110 @@
     <script type="text/javascript" src="js/FileSaver.js"></script>
     <script type="text/javascript" src="js/canvas-toBlob.js"></script>
     <script type="text/javascript">
+      var map ;
+      var geocoder;
       function initialize() {
         var mapOptions = {
           center: new google.maps.LatLng(37.777499,-122.421538),
           zoom: 12,
+          mapTypeControl: true,
+		  mapTypeControlOptions: {
+		    style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
+		  },
+		  panControl: false,
+		  streetViewControl: false,
+		  zoomControl: true,
+		  zoomControlOptions: {
+		    style: google.maps.ZoomControlStyle.SMALL
+		  },
           mapTypeId: google.maps.MapTypeId.ROADMAP
         };
-        var map = new google.maps.Map(document.getElementById("map_canvas"),
-            mapOptions);
+        map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions) ;
+        geocoder = new google.maps.Geocoder();
+        //Set submit on enter
+        $("#searchbox").keyup(function(event){
+		    if(event.keyCode == 13){
+		        $("#find").click();
+		    }
+		});
+		//Set delete text on focus
+		$('#searchbox').focus(function(){
+	    	if ( $(this).val() == "lat, long or place")
+	      		$(this).val('');
+	 	});
+	 	$('#searchbox').focusout(function(){
+	    	if ( $(this).val() == "")
+	      		$(this).val("lat, long or place");
+	 	});
+      }
+      function getWorldString()
+      {
+		var bounds = map.getBounds();
+		var ne = bounds.getNorthEast(); // LatLng of the north-east corner
+		var sw = bounds.getSouthWest(); // LatLng of the south-west corder
+		var hrez = (ne.lng()- sw.lng())/$("#map_canvas").width() ;
+		var vrez = (sw.lat() - ne.lat())/$("#map_canvas").height() ;
+		return hrez+"\n0.0000\n0.0000\n"+ vrez + "\n" + (nw.lng() + hrez/2) + "\n" +  (nw.lat() + vrez/2) + "\n" ;  	
+      }
+      function getPamString(prj)
+      {
+      	var bounds = map.getBounds();
+		var ne = bounds.getNorthEast(); // LatLng of the north-east corner
+		var sw = bounds.getSouthWest(); // LatLng of the south-west corder
+		var nw = new google.maps.LatLng(ne.lat(), sw.lng());
+		var se = new google.maps.LatLng(sw.lat(), ne.lng());
+		var hrez = (ne.lng()- sw.lng())/$("#map_canvas").width() ;
+		var vrez = (sw.lat() - ne.lat())/$("#map_canvas").height() ;
+		var pam = "<PAMDataset>\n  <SRS>" + prj + "</SRS>/n  <GeoTransform>" ;
+		pam += nw.lng()+", "+hrez+", 0.0000, "+ nw.lat()+", 0.0000, "+ vrez ;
+		pam += "</GeoTransform>/n</PAMDataset>"
+		return pam ;  
+      }
+      function geocode()
+      {
+      	if( $("#searchbox").val()!="lat, long or place" )
+      	{
+      		geocoder.geocode( {'address': $("#searchbox").val() }, function(results, status) {
+      			if (status == google.maps.GeocoderStatus.OK)
+      			  map.setCenter(results[0].geometry.location);
+      			else
+      			  alert("Couldn't find "+$("#searchbox").val()) ;
+      		}) ;
+      	}
       }
       function snap()
       {
+      	//hide controls for the snap
+      	map.setOptions({mapTypeControl: false, zoomControl: false}) ;
+      	var prj = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]' ;
       	var filename = $("#filename").val()==""? "ortho" : $("#filename").val() ;
-      	var html2obj = html2canvas($('#map_canvas'), {logging: true, useCORS: true, allowTaint: false, onrendered: function(canvas){
+      	var html2obj = html2canvas($('#map_canvas'), {logging: true, useCORS: true, allowTaint: false, proxy: false, onrendered: function(canvas){
       		//ortho download
 			canvas.toBlob(function(blob){ saveAs(blob, filename+".jpg")}, "image/jpeg", 0.99);
-	
+			
+			//Pam file download
+      		var bb = new BlobBuilder;
+      		bb.append( getPamString( prj) );
+      		saveAs(bb.getBlob("text/plain"), filename+".jpg.aux.xml");
+      		/*
 			//World file download
       		var bb = new BlobBuilder;
-      		bb.append("worldfile");
+      		bb.append( getWorldString() );
       		saveAs(bb.getBlob("text/plain"), filename+".jgw");
-      		
-      		//PRJ file download
-      		bb = new BlobBuilder;
-      		bb.append("prj");
-      		saveAs(bb.getBlob("text/plain"), filename+".prj");
+			*/
       		}}) ;
-
+      	//bring controls back
+      	map.setOptions({mapTypeControl: true, zoomControl: true}) ;
       }
     </script>
   </head>
   <body onload="initialize()">
   	<div id="controls" style="width:100%; height:5%">
+  		<input type="text" name="searchbox" id="searchbox" value="lat, long or place"/><button id="find" onclick="geocode();">QuickFind!</button>
+  		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   		<input type="text" name="filename" id="filename" value="ortho"/>.jpg<button id="snap" onclick="snap();">Snap!</button>
   	</div>
     <div id="map_canvas" style="width:100%; height:95%"></div>
-    <div><img id="ortho" src="" /></div>
     <div id="test"></div>
   </body>
 </html>
